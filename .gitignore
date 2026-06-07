@@ -15,4 +15,11 @@ package.json.bak
 # debug
 npm-debug.log*
 yarn-debug.log*
-yarn-error.log* 
+yarn-error.log*
+
+# SVVT static-analysis tooling workspace (own package.json/node_modules; reports & configs ARE tracked)
+static-analysis/node_modules
+static-analysis/*-stderr.txt
+
+# Docker build scratch output
+build.log

@@ -1,4 +1,12 @@
-# MERN Ecommerce
+# MERN Ecommerce — SVVT Course Project Fork
+
+> **This is a fork of [mohamedsamara/mern-ecommerce](https://github.com/mohamedsamara/mern-ecommerce)**, originally licensed under the [MIT License](LICENSE) (Copyright (c) 2019 Mohamed Samara). It is used here as the subject application for a **Software Verification, Validation, and Testing (SVVT)** master's course project — the goal is to apply a full V&V pipeline (static analysis, test design, unit/integration/system/regression testing, coverage analysis, bug reporting & fixing) to a real, non-trivial, full-stack application, **not** to build new product features.
+>
+> **All SVVT-specific work lives in two new top-level folders, on top of the preserved original source and commit history:**
+> - [`ProjectPlan/`](ProjectPlan/00_Master_Plan.md) — the verification & validation plan: phase breakdown, test-design guidance (BVA/EP/decision tables), test-execution strategy, bug-tracking workflow, report & presentation guides, and a living [`TODO.md`](ProjectPlan/TODO.md) tracker documenting every confirmed defect found so far (functional, business-logic, security/access-control, and input-validation bugs — each with root cause, reproduction steps, and a proposed fix)
+> - [`static-analysis/`](static-analysis/STATIC_ANALYSIS_REPORT.md) — a completed two-part static analysis pass (ESLint + `eslint-plugin-security`/`react`/`react-hooks`/`jsx-a11y` across both `server/` and `client/`), with full findings, code-level root causes, proposed fixes, and critical triage of false positives
+>
+> The original README for the application itself follows below, unmodified.
 
 ## Description
 

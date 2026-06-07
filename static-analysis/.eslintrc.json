@@ -1,0 +1,22 @@
+{
+  "root": true,
+  "env": {
+    "node": true,
+    "es2021": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2021,
+    "sourceType": "module"
+  },
+  "plugins": ["security", "node"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:security/recommended",
+    "plugin:node/recommended"
+  ],
+  "rules": {
+    "node/no-unsupported-features/es-syntax": "off",
+    "node/no-missing-require": "off",
+    "node/no-unpublished-require": "off"
+  }
+}
