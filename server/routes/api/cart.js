@@ -12,15 +12,38 @@ router.post('/add', auth, async (req, res) => {
     const user = req.user._id;
     const items = req.body.products;
 
-    const products = store.caculateItemsSalesTax(items);
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'No products provided.' });
+    }
 
-    const cart = new Cart({
-      user,
-      products
-    });
+    // Validate each item and look up server-side price and stock
+    const enrichedItems = [];
+    for (const item of items) {
+      const qty = Number(item.quantity);
+      if (!Number.isInteger(qty) || qty < 1) {
+        return res.status(400).json({ error: 'Quantity must be a positive integer.' });
+      }
 
+      const product = await Product.findById(item.product);
+      if (!product) {
+        return res.status(400).json({ error: 'Product not found.' });
+      }
+      if (qty > product.quantity) {
+        return res.status(400).json({ error: 'Insufficient stock.' });
+      }
+
+      enrichedItems.push({
+        product: item.product,
+        quantity: qty,
+        price: product.price,
+        taxable: product.taxable || false
+      });
+    }
+
+    const products = store.caculateItemsSalesTax(enrichedItems);
+
+    const cart = new Cart({ user, products });
     const cartDoc = await cart.save();
-
     decreaseQuantity(products);
 
     res.status(200).json({
