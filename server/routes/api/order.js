@@ -259,6 +259,15 @@ router.delete('/cancel/:orderId', auth, async (req, res) => {
     const orderId = req.params.orderId;
 
     const order = await Order.findOne({ _id: orderId });
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+
+    if (String(order.user) !== String(req.user._id)) {
+      return res.status(403).json({ error: 'Not authorized to cancel this order.' });
+    }
+
     const foundCart = await Cart.findOne({ _id: order.cart });
 
     increaseQuantity(foundCart.products);
