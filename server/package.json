@@ -7,6 +7,8 @@
     "start": "cross-env NODE_ENV=production node index.js",
     "seed:db": "node utils/seed.js",
     "test": "jest",
+    "test:unit": "jest utils/__tests__/store.test.js --verbose",
+    "test:integration": "jest __tests__/integration --verbose --testTimeout=30000",
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
@@ -37,6 +39,8 @@
     "chalk": "^2.4.2",
     "cross-env": "^5.2.1",
     "jest": "^30.4.2",
-    "nodemon": "^1.19.1"
+    "mongodb-memory-server": "^7.6.3",
+    "nodemon": "^1.19.1",
+    "supertest": "^7.2.2"
   }
 }
