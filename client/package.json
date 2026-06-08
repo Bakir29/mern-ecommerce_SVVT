@@ -5,7 +5,16 @@
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && cross-env NODE_ENV=production webpack --mode production --config webpack/webpack.prod.js",
-    "dev": "cross-env NODE_ENV=development webpack-dev-server --config webpack/webpack.dev.js"
+    "dev": "cross-env NODE_ENV=development webpack-dev-server --config webpack/webpack.dev.js",
+    "test": "jest",
+    "test:coverage": "jest --coverage"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "\\.(css|scss|sass)$": "identity-obj-proxy",
+      "\\.(jpg|jpeg|png|gif|svg)$": "<rootDir>/jest/fileMock.js"
+    }
   },
   "dependencies": {
     "@fontsource/poppins": "^4.5.9",
@@ -46,6 +55,7 @@
     "@babel/preset-env": "^7.4.5",
     "@babel/preset-react": "^7.0.0",
     "autoprefixer": "^9.6.0",
+    "babel-jest": "^30.4.1",
     "babel-loader": "^8.0.6",
     "chalk": "^2.4.2",
     "copy-webpack-plugin": "^5.0.3",
@@ -55,6 +65,8 @@
     "dotenv-webpack": "^1.8.0",
     "file-loader": "^4.0.0",
     "html-webpack-plugin": "^3.2.0",
+    "identity-obj-proxy": "^3.0.0",
+    "jest": "^30.4.2",
     "mini-css-extract-plugin": "^0.7.0",
     "optimize-css-assets-webpack-plugin": "^5.0.1",
     "postcss-loader": "^3.0.0",
