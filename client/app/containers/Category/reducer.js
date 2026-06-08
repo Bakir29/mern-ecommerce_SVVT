@@ -10,6 +10,7 @@ import {
   FETCH_CATEGORY,
   CATEGORY_CHANGE,
   CATEGORY_EDIT_CHANGE,
+  CATEGORY_SELECT,
   SET_CATEGORY_FORM_ERRORS,
   SET_CATEGORY_FORM_EDIT_ERRORS,
   ADD_CATEGORY,
@@ -21,6 +22,7 @@ import {
 const initialState = {
   categories: [],
   storeCategories: [],
+  selectedCategory: null,
   category: {
     _id: ''
   },
@@ -51,6 +53,11 @@ const categoryReducer = (state = initialState, action) => {
       return {
         ...state,
         category: action.payload
+      };
+    case CATEGORY_SELECT:
+      return {
+        ...state,
+        selectedCategory: action.payload
       };
     case ADD_CATEGORY:
       return {

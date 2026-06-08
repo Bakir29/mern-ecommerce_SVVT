@@ -17,6 +17,7 @@ import {
 const initialState = {
   categories: [],
   storeCategories: [],
+  selectedCategory: null,
   category: { _id: '' },
   categoryFormData: {
     name: '',
@@ -129,17 +130,15 @@ describe('categoryReducer', () => {
     expect(reset.editFormErrors).toEqual({});
   });
 
-  // Bug #6 — CATEGORY_SELECT is exported from constants.js (line 9) but was
-  // never imported in actions.js, so categorySelect() was never created and
-  // never dispatched. This test documents that the reducer has no handler for
-  // this action type either — the constant exists, the action was never wired
-  // up end-to-end, and dispatching it today would silently fall through to the
-  // default case. Confirmed by static analysis (ESLint detect-object-injection
-  // triggered the investigation; grep confirmed zero dispatch sites).
-  it('documents Bug #6: CATEGORY_SELECT falls through to default — no handler exists in reducer', () => {
+  // Bug #6 fixed — CATEGORY_SELECT was exported from constants.js but never
+  // imported in actions.js (ReferenceError on dispatch) and had no reducer
+  // handler (silent no-op). Fix: imported in actions.js; reducer now sets
+  // selectedCategory. This test verifies the fixed behaviour.
+  it('CATEGORY_SELECT sets selectedCategory [Bug #6 fixed]', () => {
     const cats = [{ _id: '1', name: 'Shoes' }];
     const prev = categoryReducer(undefined, { type: FETCH_CATEGORIES, payload: cats });
     const next = categoryReducer(prev, { type: CATEGORY_SELECT, payload: '1' });
-    expect(next).toEqual(prev);
+    expect(next.selectedCategory).toBe('1');
+    expect(next.categories).toEqual(prev.categories);
   });
 });
