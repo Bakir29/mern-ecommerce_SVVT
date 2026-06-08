@@ -11,6 +11,11 @@ router.post('/add', auth, async (req, res) => {
   try {
     const user = req.user;
 
+    const rating = Number(req.body.rating);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      return res.status(400).json({ error: 'Rating must be an integer between 1 and 5.' });
+    }
+
     const review = new Review({
       ...req.body,
       user: user._id
