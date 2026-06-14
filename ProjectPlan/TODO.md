@@ -13,9 +13,9 @@ Living checklist + findings log for the **mohamedsamara/mern-ecommerce** SVVT pr
 - [x] **Static analysis COMPLETE** (both server + client) — full writeup with all findings, code snippets, triage, and proposed fixes: [`static-analysis/STATIC_ANALYSIS_REPORT.md`](../static-analysis/STATIC_ANALYSIS_REPORT.md). This satisfies VVT activity #1 ("identify potential code quality issues, bugs, or vulnerabilities without executing the program"). Headlines:
   - **Server** (45 files, ESLint + `eslint-plugin-security`): user input flows unescaped into `new RegExp()` in 3 search endpoints (incl. one public) — regex-injection/ReDoS; pairs with Bug #5 for a security thread. Plus 3 triaged-false-positive `detect-object-injection` warnings and 3 unused-import findings.
   - **Client** (221 files, ESLint + security/react/react-hooks/jsx-a11y, `@babel/eslint-parser` for class-property syntax): **found Bug #6 — `CATEGORY_SELECT` referenced in `Category/actions.js:52` but never imported → guaranteed `ReferenceError` the instant that (currently-unwired, dead-code) action creator is dispatched.** A textbook "static analysis catches what dynamic testing can't" story. Also: 31 more triaged-false-positive `detect-object-injection` warnings (same noisy-rule pattern — recommend disabling/tuning it, a nice SAST-maturity point), 36 accessibility findings (`jsx-a11y/*`), 9 batch-fixable `no-case-declarations` in reducers, 66 `no-unused-vars`, and 3 `react-hooks/exhaustive-deps` stale-closure candidates worth a closer look.
-- [ ] **→ Ready to make the initial commit** now that static analysis is done (per your plan) — see §3 for the new Bug #6 writeup first
+- [x] **→ Ready to make the initial commit** now that static analysis is done (per your plan) — see §3 for the new Bug #6 writeup first
 - [ ] Decide & document approach for Mailgun/Mailchimp/AWS S3 (currently unconfigured — "Missing mailgun keys" warning on startup; emails silently fail). See `01_Project_Selection_and_Setup.md` §1b step 5.
-- [ ] Set up GitHub Issues / labels convention on the fork
+- [x] Set up GitHub Issues / labels convention on the fork — `bug` and `security` labels created; all 7 bugs filed as issues #1–#7 (see §3 for links)
 - [ ] Set up CI (GitHub Actions) to run the test suite on push (recommended in `01_...md` §2)
 - [ ] Deploy to a public host (Vercel for client, Render/Railway for server, MongoDB Atlas for DB) — see `01_...md` §3
 
@@ -38,9 +38,19 @@ docker logs server --tail 50   # check server logs
 
 **The merchant creation flow itself is a great integration-test candidate**: it touches `Merchant`, `User`, and `Brand` models, role transitions, and token-based auth across three endpoints (`POST /api/merchant/add` → `PUT /api/merchant/approve/:id` → `POST /api/merchant/signup/:token`).
 
-## 3. Confirmed bugs found (ready to file as GitHub issues)
+## 3. Confirmed bugs found (filed as GitHub issues)
 
-These were found through actual exploration/testing — exactly the V&V process the report needs to document. Each has a clear root cause and a proposed fix, ready to become an Issue → Fix → linked-commit → before/after regression-test story (see `04_Bug_Tracking_and_Fixes.md`).
+These were found through actual exploration/testing — exactly the V&V process the report needs to document. Each has a clear root cause and a proposed fix, forming an Issue → Fix → linked-commit → before/after regression-test story (see `04_Bug_Tracking_and_Fixes.md`).
+
+| Bug | Issue | Status | Fix commit |
+|---|---|---|---|
+| #1 — Product catalog browsing returns empty | [#1](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/1) | Open | — |
+| #2 — Order confirmation email built with missing data | [#2](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/2) | Open | — |
+| #3 — Unapproved/rejected reviews affect average rating | [#3](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/3) | Closed | `e453c15` |
+| #4 — Wishlist accepts requests with no `product` | [#4](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/4) | Open | — |
+| #5 — IDOR on order cancellation | [#5](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/5) | Closed | `46b115e` |
+| #6 — `CATEGORY_SELECT` not imported (ReferenceError) | [#6](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/6) | Closed | `0be310c` |
+| #7 — Cart accepts negative/unvalidated quantity & price | [#7](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/7) | Closed | `b495702` |
 
 ### 🐛 Bug #1 — Product catalog browsing returns empty (HIGH severity)
 - **Symptom:** `GET /api/product/list` returns `{"products": [], "count": 0}` even though the DB has 100 active products with active brands. The storefront would appear completely empty to every visitor on a default page load.
@@ -161,12 +171,12 @@ This is exactly the kind of multi-step, multi-model flow that deserves an **inte
 
 ## 5. Next steps (in suggested order)
 
-- [ ] **File all five bugs *and* the regex-injection static-analysis finding as GitHub Issues** on the fork (`Bakir29/mern-ecommerce_SVVT`) — see `04_Bug_Tracking_and_Fixes.md` for the issue → fix → linked-commit pipeline. Recommended order by impact: **#5 (IDOR/security) → #1 (broken browsing) → #3 (rating integrity) → #2 (broken email) → #4 (input validation)**.
-- [ ] **Fix Bug #5 first** — it's the most severe (security/access-control) and the best demo material; write an access-control test matrix (owner/other-user/admin × own-order/others'-order) as a decision table, red→green around the ownership filter fix. Also patch the twin flaw in `PUT /status/item/:itemId`.
-- [ ] **Fix Bug #1**, write an integration test for `GET /api/product/list` with no rating param (red before fix → green after) — your strongest *functional* regression-testing evidence
-- [ ] **Fix Bug #3**, write a decision-table-driven test over review status × whether it counts toward `averageRating`
-- [ ] **Fix Bug #2**, and consider whether to also address the swallowed-error pattern in `mailgun.js` (could become a 6th, smaller "bug" tied to your static-analysis findings)
-- [ ] **Fix Bug #4**, write an equivalence-partitioning test over the `product` field (valid id / non-existent id / missing / malformed)
+- [x] **File all 7 bugs as GitHub Issues** on the fork (`Bakir29/mern-ecommerce_SVVT`) — done, issues [#1](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/1)–[#7](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/7) (see §3 table). Issues #3, #5, #6, #7 are closed with their fix commits.
+- [x] **Fix Bug #5** ([#5](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/5), closed via `46b115e`) — ownership check added to `DELETE /api/order/cancel/:orderId`, red→green via TC-ORD-04.
+- [ ] **Fix Bug #1** ([#1](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/1), open) — write an integration test for `GET /api/product/list` with no rating param (red before fix → green after) — your strongest *functional* regression-testing evidence
+- [x] **Fix Bug #3** ([#3](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/3), closed via `e453c15`) — rating bounds validated on `/api/review/add`.
+- [ ] **Fix Bug #2** ([#2](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/2), open), and consider whether to also address the swallowed-error pattern in `mailgun.js` (could become a smaller bug tied to your static-analysis findings)
+- [ ] **Fix Bug #4** ([#4](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/4), open), write an equivalence-partitioning test over the `product` field (valid id / non-existent id / missing / malformed)
 - [ ] Optional further exploration: merchant-side brand/product management as a merchant role, responsiveness/UI checks — lower priority, the 5 bugs found already give excellent, varied report material (functional, business-logic, security, input-validation, integration)
 - [ ] Move to **Phase 2**: pick a static analysis tool for this Node/React stack (ESLint + `eslint-plugin-security` or SonarCloud are good fits — see `02_Static_Analysis_and_Test_Design.md`) and start drafting the formal test plan (scope, environment, EP/BVA/decision-table test case designs)
 
