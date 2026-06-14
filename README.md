@@ -6,6 +6,11 @@
 > - [`ProjectPlan/`](ProjectPlan/00_Master_Plan.md) — the verification & validation plan: phase breakdown, test-design guidance (BVA/EP/decision tables), test-execution strategy, bug-tracking workflow, report & presentation guides, and a living [`TODO.md`](ProjectPlan/TODO.md) tracker documenting every confirmed defect found so far (functional, business-logic, security/access-control, and input-validation bugs — each with root cause, reproduction steps, and a proposed fix)
 > - [`static-analysis/`](static-analysis/STATIC_ANALYSIS_REPORT.md) — a completed two-part static analysis pass (ESLint + `eslint-plugin-security`/`react`/`react-hooks`/`jsx-a11y` across both `server/` and `client/`), with full findings, code-level root causes, proposed fixes, and critical triage of false positives
 >
+> **Live deployment (SVVT fork):**
+> - Storefront (client): https://mern-ecommerce-svvt-client.onrender.com/
+> - API (server): https://mern-ecommerce-svvt-api.onrender.com/api
+> - Database: MongoDB Atlas (free M0 cluster), seeded with sample products/brands/categories
+>
 > The original README for the application itself follows below, unmodified.
 
 ## Description

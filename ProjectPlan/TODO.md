@@ -17,7 +17,11 @@ Living checklist + findings log for the **mohamedsamara/mern-ecommerce** SVVT pr
 - [ ] Decide & document approach for Mailgun/Mailchimp/AWS S3 (currently unconfigured — "Missing mailgun keys" warning on startup; emails silently fail). See `01_Project_Selection_and_Setup.md` §1b step 5.
 - [x] Set up GitHub Issues / labels convention on the fork — `bug` and `security` labels created; all 7 bugs filed as issues #1–#7 (see §3 for links)
 - [ ] Set up CI (GitHub Actions) to run the test suite on push (recommended in `01_...md` §2)
-- [ ] Deploy to a public host (Vercel for client, Render/Railway for server, MongoDB Atlas for DB) — see `01_...md` §3
+- [x] **Deployed to a public host** — see `01_...md` §3:
+  - Client: Render Static Site — https://mern-ecommerce-svvt-client.onrender.com/
+  - Server: Render Web Service — https://mern-ecommerce-svvt-api.onrender.com/api
+  - Database: MongoDB Atlas free M0 cluster, seeded with 100 products / 10 brands / 10 categories
+  - Deployment verification surfaced two NEW environment-dependent bugs (#8, #9, below) on top of the already-known Bug #1 — all three fixed together in `0c6a189`
 
 To start/stop the stack:
 ```
@@ -44,15 +48,17 @@ These were found through actual exploration/testing — exactly the V&V process 
 
 | Bug | Issue | Status | Fix commit |
 |---|---|---|---|
-| #1 — Product catalog browsing returns empty | [#1](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/1) | Open | — |
+| #1 — Product catalog browsing returns empty (`$gte: NaN` rating filter) | [#1](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/1) | Closed | `0c6a189` |
 | #2 — Order confirmation email built with missing data | [#2](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/2) | Open | — |
 | #3 — Unapproved/rejected reviews affect average rating | [#3](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/3) | Closed | `e453c15` |
 | #4 — Wishlist accepts requests with no `product` | [#4](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/4) | Open | — |
 | #5 — IDOR on order cancellation | [#5](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/5) | Closed | `46b115e` |
 | #6 — `CATEGORY_SELECT` not imported (ReferenceError) | [#6](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/6) | Closed | `0be310c` |
 | #7 — Cart accepts negative/unvalidated quantity & price | [#7](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/7) | Closed | `b495702` |
+| #8 — `/api/product/list` 400s on default browse (empty `$sort` stage) | [#8](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/8) | Closed | `0c6a189` |
+| #9 — `$match` with `undefined`-valued keys zeroes out catalog results | [#9](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/9) | Closed | `0c6a189` |
 
-### 🐛 Bug #1 — Product catalog browsing returns empty (HIGH severity)
+### 🐛 Bug #1 — Product catalog browsing returns empty (HIGH severity) — CLOSED via `0c6a189`
 - **Symptom:** `GET /api/product/list` returns `{"products": [], "count": 0}` even though the DB has 100 active products with active brands. The storefront would appear completely empty to every visitor on a default page load.
 - **Root cause:** `server/utils/queries.js`, function `getStoreProductsQuery`, lines 9–11:
   ```js
@@ -62,8 +68,9 @@ These were found through actual exploration/testing — exactly the V&V process 
   ```
   When the client doesn't pass a `rating` query param (the default browse state), `rating` is `undefined` → `Number(undefined)` → `NaN` → the aggregation's final `$match` becomes `averageRating: { $gte: NaN }`. MongoDB's `$gte` against `NaN` is false for every document, so **all products get filtered out**.
 - **Verified independently:** replayed the full aggregation pipeline directly in `mongosh` — `{ $gte: NaN }` → 0 results, `{ $gte: 0 }` → 100 results.
-- **Proposed fix:** `const ratingFilter = rating ? { rating: { $gte: rating } } : {};` and only merge `averageRating` into `matchQuery` when a rating filter was actually provided (or default to `{ $gte: 0 }`).
+- **Fix applied:** `const ratingFilter = rating ? { averageRating: { $gte: rating } } : {};`, spread into `matchQuery` alongside `priceFilter` instead of assigning `undefined`-valued keys (this also fixes #9, a second bug in the same object literal).
 - **Why it's great for the report:** highest-impact bug found (breaks the core browsing feature), cleanly root-caused to one line, trivially fixable, and perfect for a red→green regression-test pair (`GET /api/product/list` with no rating param: fails before fix, passes after).
+- **Postscript — deployment surfaced two MORE bugs in the same endpoint:** when verifying the live Render/Atlas deployment, fixing this bug alone wasn't enough to make `/api/product/list` work — see **#8** and **#9** below, both fixed in the same commit. All three only fully manifest together against Atlas's MongoDB version on the *default* (no-filter) browse request, which is exactly the request the real client sends on first page load — a good example of why **deployment/system-level testing against the real target environment** catches things local Docker testing doesn't.
 
 ### 🐛 Bug #2 — Order confirmation email always built with missing data (MEDIUM severity)
 - **Symptom:** Not visible at runtime (errors are swallowed — see below), but confirmed by code inspection + signature comparison.
@@ -158,7 +165,7 @@ These were found through actual exploration/testing — exactly the V&V process 
 - **Proposed fix:** (a) validate `quantity` is a positive integer within `[1, product.quantity]` for every line item — reject the whole cart with `400` otherwise; (b) **never trust client-supplied `price`** — look up each product's authoritative price server-side and compute totals from that; (c) as defense-in-depth, clamp/validate the value passed into `$inc` so a negative adjustment can never increase stock.
 - **Why it's great for the report:** your **strongest, most severe finding overall** — a compound vulnerability spanning input validation, business-logic/sign-errors, and trust-boundary violations, with a real (if modest-scale) financial-fraud angle. It's also a fantastic methodology story: **found by designing tests, before executing a single one** — directly demonstrates that "test case design" is itself a bug-finding activity, not just prep work for execution. Perfect material for an EP+BVA test design write-up (partitions: negative / zero / valid / exceeds-stock / non-numeric `quantity`) feeding directly into a red→green regression pair.
 
-## 4. How the merchant test account was created (useful for your test-plan write-up)
+
 
 This sequence is worth documenting as-is — it's effectively a manual integration test you already performed:
 1. `POST /api/merchant/add` with name/business/phone/email/brandName → creates a `Merchant` doc with `status: "Waiting Approval"`, fires (unconfigured) Mailgun email
@@ -173,11 +180,12 @@ This is exactly the kind of multi-step, multi-model flow that deserves an **inte
 
 - [x] **File all 7 bugs as GitHub Issues** on the fork (`Bakir29/mern-ecommerce_SVVT`) — done, issues [#1](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/1)–[#7](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/7) (see §3 table). Issues #3, #5, #6, #7 are closed with their fix commits.
 - [x] **Fix Bug #5** ([#5](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/5), closed via `46b115e`) — ownership check added to `DELETE /api/order/cancel/:orderId`, red→green via TC-ORD-04.
-- [ ] **Fix Bug #1** ([#1](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/1), open) — write an integration test for `GET /api/product/list` with no rating param (red before fix → green after) — your strongest *functional* regression-testing evidence
+- [x] **Fix Bug #1** ([#1](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/1), closed via `0c6a189`) — found during deployment verification to require two MORE compounding fixes (#8, #9, same commit) before `/api/product/list` actually returned products. Still worth an integration test for `GET /api/product/list` with no filters (red before fix → green after) — strongest *functional* regression-testing evidence.
 - [x] **Fix Bug #3** ([#3](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/3), closed via `e453c15`) — rating bounds validated on `/api/review/add`.
 - [ ] **Fix Bug #2** ([#2](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/2), open), and consider whether to also address the swallowed-error pattern in `mailgun.js` (could become a smaller bug tied to your static-analysis findings)
 - [ ] **Fix Bug #4** ([#4](https://github.com/Bakir29/mern-ecommerce_SVVT/issues/4), open), write an equivalence-partitioning test over the `product` field (valid id / non-existent id / missing / malformed)
-- [ ] Optional further exploration: merchant-side brand/product management as a merchant role, responsiveness/UI checks — lower priority, the 5 bugs found already give excellent, varied report material (functional, business-logic, security, input-validation, integration)
+- [x] **Deploy the app** — client (Render Static Site) + server (Render Web Service) + MongoDB Atlas, all live and cross-wired (`CLIENT_URL`/`API_URL` set). See §1.
+- [ ] Optional further exploration: merchant-side brand/product management as a merchant role, responsiveness/UI checks — lower priority, the bugs found already give excellent, varied report material (functional, business-logic, security, input-validation, integration, deployment/environment-dependent)
 - [ ] Move to **Phase 2**: pick a static analysis tool for this Node/React stack (ESLint + `eslint-plugin-security` or SonarCloud are good fits — see `02_Static_Analysis_and_Test_Design.md`) and start drafting the formal test plan (scope, environment, EP/BVA/decision-table test case designs)
 
 ## 6. Exploration log (for traceability — what's been poked at so far)
