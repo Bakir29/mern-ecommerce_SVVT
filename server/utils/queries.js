@@ -6,14 +6,12 @@ exports.getStoreProductsQuery = (min, max, rating) => {
   min = Number(min);
 
   const priceFilter = min && max ? { price: { $gte: min, $lte: max } } : {};
-  const ratingFilter = rating
-    ? { rating: { $gte: rating } }
-    : { rating: { $gte: rating } };
+  const ratingFilter = rating ? { averageRating: { $gte: rating } } : {};
 
   const matchQuery = {
     isActive: true,
-    price: priceFilter.price,
-    averageRating: ratingFilter.rating
+    ...priceFilter,
+    ...ratingFilter
   };
 
   const basicQuery = [
