@@ -21,5 +21,9 @@ yarn-error.log*
 static-analysis/node_modules
 static-analysis/*-stderr.txt
 
+# Test coverage & Playwright run output
+coverage
+e2e/test-results
+
 # Docker build scratch output
 build.log
